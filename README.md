@@ -1,113 +1,508 @@
-# terraform-docs
+# Google Cloud Composer Lab
 
-[![Build Status](https://github.com/terraform-docs/terraform-docs/workflows/ci/badge.svg)](https://github.com/terraform-docs/terraform-docs/actions) [![GoDoc](https://pkg.go.dev/badge/github.com/terraform-docs/terraform-docs)](https://pkg.go.dev/github.com/terraform-docs/terraform-docs) [![Go Report Card](https://goreportcard.com/badge/github.com/terraform-docs/terraform-docs)](https://goreportcard.com/report/github.com/terraform-docs/terraform-docs) [![Codecov Report](https://codecov.io/gh/terraform-docs/terraform-docs/branch/master/graph/badge.svg)](https://codecov.io/gh/terraform-docs/terraform-docs) [![License](https://img.shields.io/github/license/terraform-docs/terraform-docs)](https://github.com/terraform-docs/terraform-docs/blob/master/LICENSE) [![Latest release](https://img.shields.io/github/v/release/terraform-docs/terraform-docs)](https://github.com/terraform-docs/terraform-docs/releases)
+This repository demonstrates how to provision and use **Google Cloud Composer (managed Apache Airflow)** using **Terraform**, configure IAM correctly, and work with the default **DAGs folder in Google Cloud Storage**.
 
-![terraform-docs-teaser](./images/terraform-docs-teaser.png)
+---
 
-## What is terraform-docs
+## Prerequisites
 
-A utility to generate documentation from Terraform modules in various output formats.
+### GCP Project Setup
 
-## Documentation
+Create a Google Cloud project to be used for this Cloud Composer lab.
 
-- **Users**
-  - Read the [User Guide] to learn how to use terraform-docs
-  - Read the [Formats Guide] to learn about different output formats of terraform-docs
-  - Refer to [Config File Reference] for all the available configuration options
-- **Developers**
-  - Read [Contributing Guide] before submitting a pull request
+Example project ID:
 
-Visit [our website] for all documentation.
+- `subhamay-gcc-lab-06611`  
+  *(The numeric suffix helps ensure global uniqueness.)*
 
-## Installation
-
-The latest version can be installed using `go get`:
+Set the active project:
 
 ```bash
-GO111MODULE="on" go get github.com/terraform-docs/terraform-docs@v0.12.0
-```
+gcloud config set project <PROJECT_ID>
+````
 
-**NOTE:** to download any version **before** `v0.9.1` (inclusive) you need to use to
-old module namespace (`segmentio`):
-
-```bash
-# only for v0.9.1 and before
-GO111MODULE="on" go get github.com/segmentio/terraform-docs@v0.9.1
-```
-
-**NOTE:** please use the latest go to do this, we use 1.16.0 but ideally go 1.15 or greater.
-
-This will put `terraform-docs` in `$(go env GOPATH)/bin`. If you encounter the error
-`terraform-docs: command not found` after installation then you may need to either add
-that directory to your `$PATH` as shown [here] or do a manual installation by cloning
-the repo and run `make build` from the repository which will put `terraform-docs` in:
+**Example:**
 
 ```bash
-$(go env GOPATH)/src/github.com/terraform-docs/terraform-docs/bin/$(uname | tr '[:upper:]' '[:lower:]')-amd64/terraform-docs
+gcloud config set project subhamay-gcc-lab-06611
 ```
 
-Stable binaries are also available on the [releases] page. To install, download the
-binary for your platform from "Assets" and place this into your `$PATH`:
+**Expected Output:**
+
+```text
+Updated property [core/project].
+```
+
+---
+
+### Authenticate with Google Cloud
+
+Authorize the Google Cloud CLI to access your account.
 
 ```bash
-curl -Lo ./terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v0.12.0/terraform-docs-v0.12.0-$(uname)-amd64.tar.gz
-tar -xzf terraform-docs.tar.gz
-chmod +x terraform-docs
-mv terraform-docs /some-dir-in-your-PATH/terraform-docs
+gcloud auth login --no-launch-browser
 ```
 
-**NOTE:** Windows releases are in `ZIP` format.
+ℹ️ Note:
+Use the --no-launch-browser flag if you are working in a remote environment (e.g., VS Code, Cloud Shell, SSH session).
+The command will provide a URL that you can open in a local browser to complete authentication.
 
-If you are a Mac OS X user, you can use [Homebrew]:
+**Example Output:**
+
+```text
+Credentialed Accounts
+ACTIVE  ACCOUNT
+*       user@example.com
+```
+
+**Common Mistake**
+
+❌ Incorrect flag – this will fail.
+```bash
+gcloud auth login --no-launch-bro
+```
+✔️ Correct flag is:
+```text
+--no-launch-browser
+```
+
+---
+
+### (Optional) Verify Authentication
 
 ```bash
-brew install terraform-docs
+gcloud auth list
 ```
 
-or
+### Required APIs
+
+Enable the required Google Cloud APIs:
 
 ```bash
-brew install terraform-docs/tap/terraform-docs
+gcloud services enable \
+  composer.googleapis.com \
+  storage.googleapis.com \
+  bigquery.googleapis.com \
+  iam.googleapis.com
 ```
 
-Windows users can install using [Scoop]:
+**Example:**
 
 ```bash
-scoop bucket add terraform-docs https://github.com/terraform-docs/scoop-bucket
-scoop install terraform-docs
+gcloud services enable \
+  composer.googleapis.com \
+  storage.googleapis.com \
+  bigquery.googleapis.com \
+  iam.googleapis.com \
+  --project=subhamay-gcc-lab-06611
 ```
 
-or [Chocolatey]:
+**Expected Output:**
+
+```text
+Operation "operations/xxxx" finished successfully.
+```
+
+---
+
+## Service Account Setup
+
+Cloud Composer should use a **user-managed service account** instead of the default Compute Engine service account.
+
+### Create Service Account
 
 ```bash
-choco install terraform-docs
+gcloud iam service-accounts create terraform-sa \
+  --display-name="Terraform Service Account"
 ```
 
-Alternatively you also can run `terraform-docs` as a container:
+**Expected Output:**
+
+```text
+Created service account [terraform-sa].
+```
+
+Verify creation:
 
 ```bash
-docker run quay.io/terraform-docs/terraform-docs:0.12.0
+gcloud iam service-accounts list
 ```
 
-**NOTE:** Docker tag `latest` refers to _latest_ stable released version and `edge`
-refers to HEAD of `master` at any given point in time.
+---
 
-## Community
+### Assign Required IAM Roles
 
-- Discuss terraform-docs on [Slack]
+#### Cloud Composer Worker Role (Required)
 
-## License
+```bash
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
 
-MIT License - Copyright (c) 2021 The terraform-docs Authors.
+  gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/composer.worker"
+```
 
-[User Guide]: ./docs/user-guide/introduction.md
-[Formats Guide]: ./docs/reference/terraform-docs.md
-[Config File Reference]: ./docs/user-guide/configuration.md
-[Contributing Guide]: CONTRIBUTING.md
-[our website]: https://terraform-docs.io/
-[here]: https://golang.org/doc/code.html#GOPATH
-[releases]: https://github.com/terraform-docs/terraform-docs/releases
-[Homebrew]: https://brew.sh
-[Scoop]: https://scoop.sh/
-[Chocolatey]: https://www.chocolatey.org
-[Slack]: https://slack.terraform-docs.io/
+**Example:**
+
+```bash
+
+gcloud projects add-iam-policy-binding subhamay-gcc-lab-06611 \
+  --member="serviceAccount:terraform-sa@subhamay-gcc-lab-06611.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+
+gcloud projects add-iam-policy-binding subhamay-gcc-lab-06611 \
+  --member="serviceAccount:terraform-sa@subhamay-gcc-lab-06611.iam.gserviceaccount.com" \
+  --role="roles/composer.admin"
+```
+
+---
+
+#### Optional: Editor Role (For Labs / Learning Only)
+
+> ⚠️ **Not recommended for production**
+
+```bash
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:composer-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/editor"
+```
+
+**Example:**
+
+```bash
+gcloud projects add-iam-policy-binding subhamay-gcc-lab-06611 \
+  --member="serviceAccount:composer-sa@subhamay-gcc-lab-06611.iam.gserviceaccount.com" \
+  --role="roles/editor"
+```
+
+---
+
+#### Verify Assigned Roles
+
+```bash
+gcloud projects get-iam-policy YOUR_PROJECT_ID \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:composer-sa@" \
+  --format="table(bindings.role)"
+```
+
+**Example:**
+
+```bash
+gcloud projects get-iam-policy subhamay-gcc-lab-06611 \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:composer-sa@" \
+  --format="table(bindings.role)"
+```
+
+**Expected Output:**
+
+```text
+ROLE
+roles/composer.worker
+roles/editor
+```
+
+#### Create and Download the Service Account JSON Key
+```bash
+gcloud iam service-accounts keys create terraform-sa-key.json \
+  --iam-account="composer-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com"
+```
+
+**Example:**
+
+```bash
+gcloud iam service-accounts keys create subhamay-gcc-lab-06611.json \
+  --iam-account="composer-sa@subhamay-gcc-lab-06611.iam.gserviceaccount.com"
+```
+
+#### Configure Terraform to Use the Service Account
+
+Save the json file `subhamay-gcc-lab-06611.json` to `/tf/tf-sa-key`
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="/absolute/path/to/subhamay-gcc-lab-06611.json"
+```
+**Example:**
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="/tf/tf-sa-key/subhamay-gcc-lab-06611.json"
+```
+
+
+#### Add the file subhamay-gcc-lab-06611.json to .gitignore
+
+Add the file subhamay-gcc-lab-06611.json to .gitignore so that the file is not saved to the repository
+
+## Create Codespaces Secret for Terraform Service Account
+
+Create a **GitHub Codespaces secret** to securely store the Google Cloud service account key used by Terraform.
+
+### Steps
+
+1. Generate a **JSON key** for the Google Cloud service account that Terraform will use.
+2. In your GitHub repository, navigate to:
+
+   **Settings → Secrets and variables → Codespaces**
+3. Create a new secret with the following details:
+
+   - **Name:** `TERRAFORM_SA_KEY`
+   - **Value:** Paste the full contents of the service account JSON key
+
+4. Save the secret.
+
+### How This Is Used in Codespaces
+
+At the time of **GitHub Codespace launch**, the value of the `TERRAFORM_SA_KEY` secret is automatically injected into the Codespace as an environment variable.  
+A startup or post-create script converts this secret into a **JSON key file** on the filesystem, which Terraform then uses for authentication with Google Cloud.
+
+> 🔐 **Security Note:**  
+> - The JSON key file is created **only inside the ephemeral Codespace environment**
+> - The key is **never committed** to source control
+> - Always delete unused service account keys and rotate them regularly
+
+This approach enables secure, automated authentication for Terraform while keeping credentials out of the repository.
+
+
+
+---
+
+## Set Up Workspace in HCP Terraform
+
+Create a workspace within a project in **HCP Terraform** to manage the infrastructure state for this repository.
+
+1. In HCP Terraform, create a new **project** (or use an existing one).
+2. Under the project, create a **workspace** for this repository.
+3. Generate an **API token** in HCP Terraform with access to the workspace.
+4. Store the API token securely as a **Codespaces secret** named:
+
+   `TF_TOKEN_APP_TERRAFORM_IO`
+
+This token allows Terraform to authenticate with HCP Terraform for remote state management and operations.
+
+
+---
+## Terraform Setup
+
+### Required Tools
+
+Ensure the following tools are installed:
+
+* Terraform ≥ 1.5
+* Google Cloud CLI
+
+Verify:
+
+```bash
+terraform version
+gcloud version
+```
+
+---
+
+## Terraform Login (HCP Terraform Backend)
+
+To use **HCP Terraform** (Terraform Cloud) as the remote backend for state storage and runs, you must authenticate Terraform with your HCP Terraform account.
+
+### Prerequisite
+
+Make sure you have created and saved a Codespaces secret named:
+
+- `TF_TOKEN_APP_TERRAFORM_IO`
+
+(See: **Setup workspace in HCP Terraform**)
+
+### Authenticate Terraform
+
+Run:
+
+```bash
+terraform login
+```
+
+This command opens a browser flow (or prints a URL in headless environments) and stores a token locally in:
+
+-  ~/.terraform.d/credentials.tfrc.json
+
+**Example (Headless / Codespaces)**
+
+If you are running inside GitHub Codespaces and cannot launch a browser automatically:
+
+```bash
+terraform login
+```
+
+**Example Output:**
+
+```text
+Terraform will request an API token for app.terraform.io using your browser.
+If you can't use a browser, follow this link to generate a token:
+https://app.terraform.io/app/settings/tokens?source=terraform-login
+```
+
+**Verify Login
+**
+You can confirm Terraform has credentials stored by checking:
+
+```bash
+cat ~/.terraform.d/credentials.tfrc.json
+```
+
+
+✅ You should see an entry for app.terraform.io.
+
+**Notes**
+
+- If TF_TOKEN_APP_TERRAFORM_IO is set in the environment (for example, via Codespaces secrets),
+- Terraform will automatically use it for app.terraform.io authentication.
+
+Do not commit credentials.tfrc.json to source control.
+---
+
+#### Create Cloud Composer Environment
+
+This project uses **Terraform** to provision a **Cloud Composer 3 (Apache Airflow 2.x)** environment.
+
+#### Initialize Terraform
+
+```bash
+terraform init
+```
+
+**Expected Output:**
+
+```text
+Terraform has been successfully initialized!
+```
+
+---
+
+#### Apply Terraform Configuration
+
+```bash
+terraform apply
+```
+
+Confirm when prompted.
+
+> ⏳ **Note:** Environment creation can take **20–30 minutes**.
+
+---
+
+#### Retrieve the DAGs Folder (GCS)
+
+Once the environment is created, Terraform outputs the DAGs GCS prefix:
+
+```bash
+terraform output dag_gcs_prefix
+```
+
+**Example Output:**
+
+```text
+gs://us-central1-composer-xxxx-bucket/dags
+```
+
+List the DAGs directory:
+
+```bash
+gcloud storage ls gs://us-central1-composer-xxxx-bucket/dags/
+```
+
+---
+
+#### Upload a DAG
+
+Upload a DAG file to the Composer environment:
+
+```bash
+gcloud composer environments storage dags import \
+  --environment YOUR_ENV_NAME \
+  --location us-central1 \
+  --source ./dags/sample_dag.py
+```
+
+**Example:**
+
+```bash
+gcloud composer environments storage dags import \
+  --environment composer-env \
+  --location us-central1 \
+  --source ./dags/hello_composer.py
+```
+
+**Expected Output:**
+
+```text
+Importing DAGs...
+Operation completed successfully.
+```
+
+The DAG will appear in the **Airflow Web UI** within a few minutes.
+
+---
+
+#### Access Airflow Web UI
+
+Navigate to:
+
+```text
+Google Cloud Console → Cloud Composer → Environment → Airflow Web UI
+```
+
+Log in using your Google Cloud account.
+
+---
+
+## Troubleshooting
+
+#### Error: `roles/composer.worker` Missing
+
+```text
+composer-sa@... is expected to have at least one role like roles/composer.worker
+```
+
+**Fix:** Assign `roles/composer.worker` to the environment service account.
+
+---
+
+#### Error: GCS Bucket Name Restricted
+
+```text
+Use of this bucket name is restricted: 'us-central1-google-composer-xxxx-bucket'
+```
+
+**Fix:** Use a **custom bucket name** that does not contain `google` or `goog`.
+
+---
+
+#### Error: Storage Permissions Missing
+
+```text
+storage.objects.list permission denied
+```
+
+**Fix:** Grant `roles/storage.objectAdmin` or temporarily `roles/editor`.
+
+---
+
+#### Cleanup
+
+To avoid unnecessary charges, destroy all resources:
+
+```bash
+terraform destroy
+```
+
+---
+
+#### References
+
+* [https://cloud.google.com/composer](https://cloud.google.com/composer)
+* [https://cloud.google.com/composer/docs](https://cloud.google.com/composer/docs)
+* [https://airflow.apache.org/docs](https://airflow.apache.org/docs)
+
+

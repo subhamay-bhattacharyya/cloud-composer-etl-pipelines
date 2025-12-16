@@ -1,21 +1,32 @@
-## =====================================================================================================================
-## 📁 Project Name        : Terraform GitHub Template Repository
-## 📝 Description         : A reusable template for setting up Terraform-based Infrastructure-as-Code (IaC) projects
-##                         on GitHub using GitHub Actions for CI/CD automation.
-##
-## 🔄 Modification History:
-##   Version   Date          Author     Description
-##   -------   ------------  --------   -------------------------------------------------------------------------------
-##   1.0.0     Jun 20, 2025  Subhamay   Initial version with GitHub Actions workflow for Terraform CI/CD
-##
-## =====================================================================================================================
+# --- root/outputs.tf ---
 
-# --- root/main.tf ---
-
-output "s3_bucket_name" {
-  value = aws_s3_bucket.s3_bucket.arn
+output "google-project" {
+  value       = google_project_service.this.project
+  description = "The GCP Project ID where Composer is enabled"
 }
 
-output "s3_bucket_tags" {
-  value = aws_s3_bucket.s3_bucket.tags_all
+output "service-account-email" {
+  value       = google_service_account.this.email
+  description = "The email address of the Composer service account"
+}
+
+output "service-account-name" {
+  value       = google_service_account.this.name
+  description = "The fully-qualified name of the service account"
+}
+
+output "service-account-display-name" {
+  value       = google_service_account.this.display_name
+  description = "The display name of the service account"
+}
+
+
+output "service-account-id" {
+  value       = google_service_account.this.account_id
+  description = "The account ID of the service account"
+}
+
+output "service-account-unique-id" {
+  value       = google_service_account.this.unique_id
+  description = "The unique ID of the service account"
 }

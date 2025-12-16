@@ -1,29 +1,48 @@
-## =====================================================================================================================
-## 📁 Project Name        : Terraform GitHub Template Repository
-## 📝 Description         : A reusable template for setting up Terraform-based Infrastructure-as-Code (IaC) projects
-##                         on GitHub using GitHub Actions for CI/CD automation.
-##
-## 🔄 Modification History:
-##   Version   Date          Author     Description
-##   -------   ------------  --------   -------------------------------------------------------------------------------
-##   1.0.0     Jun 20, 2025  Subhamay   Initial version with GitHub Actions workflow for Terraform CI/CD
-##
-## =====================================================================================================================
-
 # --- root/main.tf ---
 
-resource "aws_s3_bucket" "s3_bucket" {
-  bucket = local.bucket-name
+# Enable Composer API
+resource "google_project_service" "this" {
+  provider = google-beta
+  project  = local.tfvars-filename["gcp-project-id"]
+  service  = "composer.googleapis.com"
 
-  tags = {
-    environment          = var.environment-name
-    Owner                = "subhamay.aws@gmail.com"
-    git_commit           = "6d168a8c28fa982f7527dde045a69499cca0dce5"
-    git_file             = "tf/main.tf"
-    git_last_modified_at = "2025-07-02 02:23:06"
-    git_last_modified_by = "142895397+bsubhamay@users.noreply.github.com"
-    git_modifiers        = "142895397+bsubhamay"
-    git_org              = "subhamay-bhattacharyya"
-    git_repo             = "terraform-template"
-  }
+  disable_on_destroy = true
 }
+
+# User-managed service account for the Composer environment
+resource "google_service_account" "this" {
+  provider   = google-beta
+  account_id = local.tfvars-filename["gcp-project-id"]
+  # name         = local.tfvars-filename["gcp-sa-name"]
+  display_name = "service account for project ${local.tfvars-filename["gcp-project-name"]}"
+}
+
+# Minimum required role for a public IP Composer environment (fixes the classic worker-role error)
+resource "google_project_iam_member" "this" {
+  provider = google-beta
+  project  = local.tfvars-filename["gcp-project-id"]
+  member   = "serviceAccount:${google_service_account.this.email}"
+  for_each = toset(local.tfvars-filename["gcp-sa-roles"])
+  role     = each.value
+}
+
+# # Create the Composer environment (Composer 3)
+# resource "google_composer_environment" "env" {
+#   provider = google-beta
+#   name     = var.env-name
+#   region   = var.gcp-region
+#   project  = var.gcp-project-id
+
+#   config {
+#     software_config {
+#       # Pin a specific version to avoid surprise upgrades, as Google cautions. :contentReference[oaicite:1]{index=1}
+#       image_version = "composer-3-airflow-2.10.5-build.19"
+#     }
+
+#     node_config {
+#       service_account = "composer-sa@${var.gcp-project-id}.iam.gserviceaccount.com"
+#     }
+#   }
+
+#   # depends_on = [google_project_service.this]
+# }

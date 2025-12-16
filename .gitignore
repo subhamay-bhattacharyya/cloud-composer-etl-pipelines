@@ -85,3 +85,7 @@ dist/
 awscliv2.zip
 LICENSE.txt
 aws/*
+
+credentials.tfrc.json
+subhamay-gcc-lab-06611.json
+.terraform.*
