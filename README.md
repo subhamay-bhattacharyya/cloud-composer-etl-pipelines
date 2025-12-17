@@ -1,4 +1,66 @@
-# Google Cloud Composer Lab
+## Google Cloud Composer Lab  ![Google Cloud]
+
+This repository demonstrates how to provision and use **Google Cloud Composer (managed Apache Airflow)** using **Terraform**, configure IAM correctly, and work with the default **DAGs folder in Google Cloud Storage**.
+
+---
+
+## Project Description
+
+### Overview
+
+This project is a **hands-on infrastructure lab** that demonstrates how to provision and operate **Google Cloud Composer (Apache Airflow)** using **Terraform** with production-aligned best practices.
+
+The lab focuses on **Infrastructure as Code (IaC)**, **secure authentication**, **proper IAM design**, and **operational workflows** for managing Airflow DAGs via Google Cloud Storage rather than manual UI interactions.
+
+### What This Project Covers
+
+- Provisioning **Cloud Composer 3 (Airflow 2.x)** using Terraform
+- Using a **user-managed service account** instead of the default Compute Engine service account
+- Correct **IAM role assignments** for Composer, Storage, and Service Usage
+- Secure authentication using:
+  - Google Cloud service account keys
+  - GitHub Codespaces secrets
+  - HCP Terraform remote backend
+- Working with the **Composer DAGs GCS bucket**
+- Uploading and validating Airflow DAGs
+- Common Cloud Composer errors and how to troubleshoot them
+
+### Target Audience
+
+This lab is suitable for:
+
+- Cloud Engineers and Data Engineers
+- DevOps engineers using Terraform on GCP
+- Engineers preparing for:
+  - Google Cloud ACE / PDE certifications
+  - Apache Airflow
+  - Infrastructure-as-Code interviews
+- Anyone looking for a **realistic Cloud Composer setup** beyond console-only demos
+
+---
+
+## Architecture Flow
+
+### High-Level Flow Diagram
+
+```mermaid
+flowchart TD
+    Dev[Developer / GitHub Codespace] -->|terraform init & apply| TF[Terraform CLI]
+
+    TF -->|Authenticate via SA Key| GCP[GCP Project]
+    TF -->|Remote State| HCP[HCP Terraform]
+
+    GCP -->|Creates| SA[Terraform Service Account]
+    GCP -->|Creates| Composer[Cloud Composer Environment]
+
+    Composer -->|Uses| GCS[GCS Composer Bucket]
+    GCS -->|Stores| DAGs[DAG Files]
+
+    Dev -->|Upload DAGs| GCS
+    DAGs -->|Auto Sync| Airflow[Airflow Scheduler & Web UI]
+
+    Airflow -->|Executes| Tasks[Airflow Tasks]
+
 
 This repository demonstrates how to provision and use **Google Cloud Composer (managed Apache Airflow)** using **Terraform**, configure IAM correctly, and work with the default **DAGs folder in Google Cloud Storage**.
 
