@@ -1,6 +1,6 @@
 ![](https://img.shields.io/github/commit-activity/t/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/last-commit/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/release-date/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/repo-size/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/directory-file-count/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;[](https://img.shields.io/github/issues/subhamay-bhattacharyya/cloud-composer-etl-pipeline)&nbsp;![](https://img.shields.io/github/languages/top/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/commit-activity/m/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![Google Cloud](https://img.shields.io/badge/Google%20Cloud-4285F4?logo=googlecloud&logoColor=white)&nbsp;![](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/bsubhamay/fd4ceb53eaf2a56185a3f772e6e9f385/raw/cloud-composer-etl-pipelines.json?)
 
-## Google Cloud Composer Lab  ![Google Cloud]()
+## Google Cloud Composer Lab
 
 This repository demonstrates how to provision and use **Google Cloud Composer (managed Apache Airflow)** using **Terraform**, configure IAM correctly, and work with the default **DAGs folder in Google Cloud Storage**.
 
