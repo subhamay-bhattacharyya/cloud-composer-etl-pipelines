@@ -197,65 +197,81 @@ gcloud iam service-accounts list
 
 ### Assign Required IAM Roles
 
-#### Cloud Composer Worker Role (Required)
+>  ⚠️ Important Security Notice
+The roles listed below follow the principle of least privilege and should be preferred.
+
+> 
+```markdown
+In some lab or troubleshooting scenarios, you may be tempted to grant the roles/editor role to the Terraform service account to bypass IAM errors. This role is highly permissive and must be avoided in production environments.
+
+If roles/editor is used temporarily, remove it immediately after the infrastructure is created and replace it with the minimal required roles listed below.
+```
+
+#### Cloud Composer & Terraform Service Account Roles (Required)
+
+##### Required to create and manage service accounts
+```bash
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountAdmin"
+```
+
+##### Required to enable and manage GCP APIs
+```bash
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/composer.admin"
+```
+
+##### Grant ActAs only on the Composer runtime SA (recommended)
+```bash
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:composer-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+```
+
+
+> #### ⚠️ Temporary Workaround (Strongly Discouraged)
+
+🚨 Use only for local labs or short-lived testing
+
+The roles/editor role grants broad permissions across the project and violates least-privilege best practices.
+Do NOT use this in production.
 
 ```bash
 gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
   --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/storage.admin"
-
-  gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/composer.worker"
-
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/serviceusage.serviceUsageAdmin"
-
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountAdmin"
-
-  gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/resourcemanager.projectIamAdmin"
-
-
+  --role="roles/editor"
 ```
 
 **Example:**
 
 ```bash
+export PROJECT_ID="gcc-etl-pipelines-06611"
+export TF_SA="terraform-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+export COMPOSER_SA="composer-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 
-gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
-  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
-  --role="roles/storage.admin"
 
-
-gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
-  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
-  --role="roles/composer.admin"
-
-gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
-  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
+# Enable APIs
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${TF_SA}" \
   --role="roles/serviceusage.serviceUsageAdmin"
 
-gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
-  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountAdmin"
+# Create/manage Composer environments
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${TF_SA}" \
+  --role="roles/composer.admin"
 
-gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
-  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
-  --role="roles/editor"
-
-  
+# Grant ActAs only on the Composer runtime SA (recommended)
+gcloud iam service-accounts add-iam-policy-binding "${COMPOSER_SA}" \
+  --member="serviceAccount:${TF_SA}" \
+  --role="roles/iam.serviceAccountUser"
 ```
-
 ---
 
 #### Optional: Editor Role (For Labs / Learning Only)
 
-> ⚠️ **Not recommended for production**
+> #### ⚠️ **Not recommended for production**
 
 ```bash
 gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
@@ -271,6 +287,15 @@ gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
   --role="roles/editor"
 ```
 
+> #### 📌 Mandatory Cleanup Step
+
+#### After Terraform successfully completes:
+
+```bash
+gcloud projects remove-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/editor"
+```
 ---
 
 #### Verify Assigned Roles
@@ -306,7 +331,6 @@ gcloud iam service-accounts keys create terraform-sa-key.json \
 ```
 
 **Example:**
-
 ```bash
 gcloud iam service-accounts keys create terraform-sa-key.json \
   --iam-account="terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com"
@@ -326,7 +350,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="/tf/tf-sa-key/terraform-sa-key.json"
 ```
 
 
-#### Add the file terraform-sa-key.json to .gitignore
+> #### ⚠️ Add the file terraform-sa-key.json to .gitignore
 
 Add the file terraform-sa-key.json to .gitignore so that the file is not saved to the repository
 
