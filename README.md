@@ -62,7 +62,7 @@ This lab is suitable for:
 ### High-Level Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[Developer / GitHub Codespaces] -->|Terraform CLI| B[Terraform Provisioning]
     B -->|Enable APIs| C[GCP Service Usage]
     B -->|Create Environment| D[Cloud Composer 3]
