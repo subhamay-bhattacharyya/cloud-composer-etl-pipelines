@@ -75,7 +75,7 @@ flowchart LR
 
     H[Terraform Service Account] -->|roles/composer.admin| D
     H[Terraform Service Account] -->|roles/serviceusage.serviceUsageAdmin| C
-    H[Terraform Service Account] -->|roles/iam.serviceAccountUser (ActAs)| I[Composer Runtime Service Account]
+    H[Terraform Service Account] -->|"roles/iam.serviceAccountUser (ActAs)"| I[Composer Runtime Service Account]
 
     I -->|roles/composer.worker| D
     I -->|GCS object access| G
