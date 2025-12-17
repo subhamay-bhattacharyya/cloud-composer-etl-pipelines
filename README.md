@@ -12,7 +12,7 @@ Create a Google Cloud project to be used for this Cloud Composer lab.
 
 Example project ID:
 
-- `subhamay-gcc-lab-06611`  
+- `gcc-etl-pipelines-06611`  
   *(The numeric suffix helps ensure global uniqueness.)*
 
 Set the active project:
@@ -24,7 +24,7 @@ gcloud config set project <PROJECT_ID>
 **Example:**
 
 ```bash
-gcloud config set project subhamay-gcc-lab-06611
+gcloud config set project gcc-etl-pipelines-06611
 ```
 
 **Expected Output:**
@@ -74,7 +74,7 @@ gcloud auth login --no-launch-bro
 gcloud auth list
 ```
 
-### Required APIs
+<!-- ### Required APIs
 
 Enable the required Google Cloud APIs:
 
@@ -94,14 +94,14 @@ gcloud services enable \
   storage.googleapis.com \
   bigquery.googleapis.com \
   iam.googleapis.com \
-  --project=subhamay-gcc-lab-06611
+  --project=gcc-etl-pipelines-06611
 ```
 
 **Expected Output:**
 
 ```text
 Operation "operations/xxxx" finished successfully.
-```
+``` -->
 
 ---
 
@@ -142,20 +142,48 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
   gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
   --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/composer.worker"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/serviceusage.serviceUsageAdmin"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountAdmin"
+
+  gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/resourcemanager.projectIamAdmin"
+
+
 ```
 
 **Example:**
 
 ```bash
 
-gcloud projects add-iam-policy-binding subhamay-gcc-lab-06611 \
-  --member="serviceAccount:terraform-sa@subhamay-gcc-lab-06611.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
+  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
   --role="roles/storage.admin"
 
 
-gcloud projects add-iam-policy-binding subhamay-gcc-lab-06611 \
-  --member="serviceAccount:terraform-sa@subhamay-gcc-lab-06611.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
+  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
   --role="roles/composer.admin"
+
+gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
+  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
+  --role="roles/serviceusage.serviceUsageAdmin"
+
+gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
+  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountAdmin"
+
+gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
+  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
+  --role="roles/editor"
+
+  
 ```
 
 ---
@@ -166,15 +194,15 @@ gcloud projects add-iam-policy-binding subhamay-gcc-lab-06611 \
 
 ```bash
 gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:composer-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/editor"
 ```
 
 **Example:**
 
 ```bash
-gcloud projects add-iam-policy-binding subhamay-gcc-lab-06611 \
-  --member="serviceAccount:composer-sa@subhamay-gcc-lab-06611.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
+  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
   --role="roles/editor"
 ```
 
@@ -185,16 +213,16 @@ gcloud projects add-iam-policy-binding subhamay-gcc-lab-06611 \
 ```bash
 gcloud projects get-iam-policy YOUR_PROJECT_ID \
   --flatten="bindings[].members" \
-  --filter="bindings.members:composer-sa@" \
+  --filter="bindings.members:terraform-sa@" \
   --format="table(bindings.role)"
 ```
 
 **Example:**
 
 ```bash
-gcloud projects get-iam-policy subhamay-gcc-lab-06611 \
+gcloud projects get-iam-policy gcc-etl-pipelines-06611 \
   --flatten="bindings[].members" \
-  --filter="bindings.members:composer-sa@" \
+  --filter="bindings.members:terraform-sa@" \
   --format="table(bindings.role)"
 ```
 
@@ -209,33 +237,33 @@ roles/editor
 #### Create and Download the Service Account JSON Key
 ```bash
 gcloud iam service-accounts keys create terraform-sa-key.json \
-  --iam-account="composer-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com"
+  --iam-account="terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com"
 ```
 
 **Example:**
 
 ```bash
-gcloud iam service-accounts keys create subhamay-gcc-lab-06611.json \
-  --iam-account="composer-sa@subhamay-gcc-lab-06611.iam.gserviceaccount.com"
+gcloud iam service-accounts keys create terraform-sa-key.json \
+  --iam-account="terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com"
 ```
 
 #### Configure Terraform to Use the Service Account
 
-Save the json file `subhamay-gcc-lab-06611.json` to `/tf/tf-sa-key`
+Save the json file `terraform-sa-key.json` to `/tf/tf-sa-key`
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS="/absolute/path/to/subhamay-gcc-lab-06611.json"
+export GOOGLE_APPLICATION_CREDENTIALS="/absolute/path/to/terraform-sa-key.json"
 ```
 **Example:**
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS="/tf/tf-sa-key/subhamay-gcc-lab-06611.json"
+export GOOGLE_APPLICATION_CREDENTIALS="/tf/tf-sa-key/terraform-sa-key.json"
 ```
 
 
-#### Add the file subhamay-gcc-lab-06611.json to .gitignore
+#### Add the file terraform-sa-key.json to .gitignore
 
-Add the file subhamay-gcc-lab-06611.json to .gitignore so that the file is not saved to the repository
+Add the file terraform-sa-key.json to .gitignore so that the file is not saved to the repository
 
 ## Create Codespaces Secret for Terraform Service Account
 

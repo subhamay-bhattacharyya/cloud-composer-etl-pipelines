@@ -87,5 +87,6 @@ LICENSE.txt
 aws/*
 
 credentials.tfrc.json
-subhamay-gcc-lab-06611.json
+*-sa-key.json
 .terraform.*
+gcc-etl-pipelines-06611.json

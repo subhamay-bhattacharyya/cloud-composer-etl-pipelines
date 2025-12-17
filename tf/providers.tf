@@ -11,7 +11,7 @@ terraform {
 }
 
 provider "google-beta" {
-  credentials = file("tf-sa-key/${var.gcp-project-id}.json")
+  credentials = file("tf-sa-key/terraform-sa-key.json")
   project     = var.gcp-project-id
   region      = var.gcp-region
 }
