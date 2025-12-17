@@ -61,6 +61,7 @@ flowchart TD
 
     Airflow -->|Executes| Tasks[Airflow Tasks]
 
+```
 
 This repository demonstrates how to provision and use **Google Cloud Composer (managed Apache Airflow)** using **Terraform**, configure IAM correctly, and work with the default **DAGs folder in Google Cloud Storage**.
 
