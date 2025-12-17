@@ -2,7 +2,6 @@
 
 variable "gcp-project-id" {
   type    = string
-  default = "gcc-etl-pipelines-06611"
 }
 
 variable "gcp-region" {

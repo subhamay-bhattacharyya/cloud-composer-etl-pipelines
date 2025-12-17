@@ -1,8 +1,10 @@
 ![](https://img.shields.io/github/commit-activity/t/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/last-commit/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/release-date/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/repo-size/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/directory-file-count/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;[](https://img.shields.io/github/issues/subhamay-bhattacharyya/cloud-composer-etl-pipeline)&nbsp;![](https://img.shields.io/github/languages/top/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![](https://img.shields.io/github/commit-activity/m/subhamay-bhattacharyya/cloud-composer-etl-pipelines)&nbsp;![Google Cloud](https://img.shields.io/badge/Google%20Cloud-4285F4?logo=googlecloud&logoColor=white)&nbsp;![](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/bsubhamay/fd4ceb53eaf2a56185a3f772e6e9f385/raw/cloud-composer-etl-pipelines.json?)
 
-## Google Cloud Composer Lab
+---
 
-This repository demonstrates how to provision and use **Google Cloud Composer (managed Apache Airflow)** using **Terraform**, configure IAM correctly, and work with the default **DAGs folder in Google Cloud Storage**.
+# Google Cloud Composer Lab
+
+This repository demonstrates how to provision and operate **Google Cloud Composer (managed Apache Airflow)** using **Terraform**, configure **IAM correctly**, and manage **Airflow DAGs via Google Cloud Storage (GCS)**.
 
 ---
 
@@ -10,62 +12,74 @@ This repository demonstrates how to provision and use **Google Cloud Composer (m
 
 ### Overview
 
-This project is a **hands-on infrastructure lab** that demonstrates how to provision and operate **Google Cloud Composer (Apache Airflow)** using **Terraform** with production-aligned best practices.
+This project is a **hands-on infrastructure lab** that demonstrates how to provision and operate **Google Cloud Composer 3 (Apache Airflow 2.x)** using **Terraform**, following **production-aligned best practices**.
 
-The lab focuses on **Infrastructure as Code (IaC)**, **secure authentication**, **proper IAM design**, and **operational workflows** for managing Airflow DAGs via Google Cloud Storage rather than manual UI interactions.
+The lab focuses on:
+
+* Infrastructure as Code (IaC)
+* Secure authentication
+* Least-privilege IAM design
+* Operational workflows for managing Airflow DAGs using **GCS instead of UI-based uploads**
+
+---
 
 ### What This Project Covers
 
-- Provisioning **Cloud Composer 3 (Airflow 2.x)** using Terraform
-- Using a **user-managed service account** instead of the default Compute Engine service account
-- Correct **IAM role assignments** for Composer, Storage, and Service Usage
-- Secure authentication using:
-  - Google Cloud service account keys
-  - GitHub Codespaces secrets
-  - HCP Terraform remote backend
-- Working with the **Composer DAGs GCS bucket**
-- Uploading and validating Airflow DAGs
-- Common Cloud Composer errors and how to troubleshoot them
+* Provisioning **Cloud Composer 3 (Airflow 2.x)** using Terraform
+* Using **user-managed service accounts** instead of default Compute Engine service accounts
+* Correct **IAM role separation** for:
+
+  * Terraform provisioning
+  * Composer runtime
+* Secure authentication using:
+
+  * Google Cloud service account keys
+  * GitHub Codespaces secrets
+  * HCP Terraform remote backend
+* Working with the **Composer DAGs GCS bucket**
+* Uploading and validating Airflow DAGs
+* Common Cloud Composer errors and troubleshooting guidance
+
+---
 
 ### Target Audience
 
 This lab is suitable for:
 
-- Cloud Engineers and Data Engineers
-- DevOps engineers using Terraform on GCP
-- Engineers preparing for:
-  - Google Cloud ACE / PDE certifications
-  - Apache Airflow
-  - Infrastructure-as-Code interviews
-- Anyone looking for a **realistic Cloud Composer setup** beyond console-only demos
+* Cloud Engineers and Data Engineers
+* DevOps engineers using Terraform on GCP
+* Engineers preparing for:
+
+  * Google Cloud ACE / PDE certifications
+  * Apache Airflow
+  * Infrastructure-as-Code interviews
+* Anyone looking for a **realistic Cloud Composer setup** beyond console-only demos
 
 ---
 
 ## Architecture Flow
 
-### High-Level Flow Diagram
+### High-Level Architecture
 
 ```mermaid
-flowchart TD
-    Dev[Developer / GitHub Codespace] -->|terraform init & apply| TF[Terraform CLI]
+flowchart LR
+    A[Developer / GitHub Codespaces] -->|Terraform CLI| B[Terraform Provisioning]
+    B -->|Enable APIs| C[GCP Service Usage]
+    B -->|Create Environment| D[Cloud Composer 3]
 
-    TF -->|Authenticate via SA Key| GCP[GCP Project]
-    TF -->|Remote State| HCP[HCP Terraform]
+    D --> E[Airflow Scheduler]
+    D --> F[Airflow Workers]
 
-    GCP -->|Creates| SA[Terraform Service Account]
-    GCP -->|Creates| Composer[Cloud Composer Environment]
+    E -->|Read DAGs| G[GCS DAGs Bucket]
+    F -->|Read DAGs| G
 
-    Composer -->|Uses| GCS[GCS Composer Bucket]
-    GCS -->|Stores| DAGs[DAG Files]
+    H[Terraform Service Account] -->|roles/composer.admin| D
+    H[Terraform Service Account] -->|roles/serviceusage.serviceUsageAdmin| C
+    H[Terraform Service Account] -->|roles/iam.serviceAccountUser (ActAs)| I[Composer Runtime Service Account]
 
-    Dev -->|Upload DAGs| GCS
-    DAGs -->|Auto Sync| Airflow[Airflow Scheduler & Web UI]
-
-    Airflow -->|Executes| Tasks[Airflow Tasks]
-
+    I -->|roles/composer.worker| D
+    I -->|GCS object access| G
 ```
-
-This repository demonstrates how to provision and use **Google Cloud Composer (managed Apache Airflow)** using **Terraform**, configure IAM correctly, and work with the default **DAGs folder in Google Cloud Storage**.
 
 ---
 
@@ -73,26 +87,29 @@ This repository demonstrates how to provision and use **Google Cloud Composer (m
 
 ### GCP Project Setup
 
-Create a Google Cloud project to be used for this Cloud Composer lab.
+Create a Google Cloud project for this lab.
 
 Example project ID:
 
-- `gcc-etl-pipelines-06611`  
-  *(The numeric suffix helps ensure global uniqueness.)*
+```text
+gcc-etl-pipelines-06611
+```
+
+> The numeric suffix helps ensure global uniqueness.
 
 Set the active project:
 
 ```bash
 gcloud config set project <PROJECT_ID>
-````
+```
 
-**Example:**
+Example:
 
 ```bash
 gcloud config set project gcc-etl-pipelines-06611
 ```
 
-**Expected Output:**
+Expected output:
 
 ```text
 Updated property [core/project].
@@ -102,92 +119,47 @@ Updated property [core/project].
 
 ### Authenticate with Google Cloud
 
-Authorize the Google Cloud CLI to access your account.
+Authorize the Google Cloud CLI:
 
 ```bash
 gcloud auth login --no-launch-browser
 ```
 
-ℹ️ Note:
-Use the --no-launch-browser flag if you are working in a remote environment (e.g., VS Code, Cloud Shell, SSH session).
-The command will provide a URL that you can open in a local browser to complete authentication.
+ℹ️ **Note**
+Use `--no-launch-browser` when working in remote environments (Codespaces, SSH, Cloud Shell).
 
-**Example Output:**
+**Common mistake (incorrect flag):**
 
-```text
-Credentialed Accounts
-ACTIVE  ACCOUNT
-*       user@example.com
-```
-
-**Common Mistake**
-
-❌ Incorrect flag – this will fail.
 ```bash
 gcloud auth login --no-launch-bro
 ```
-✔️ Correct flag is:
+
+✔️ Correct flag:
+
 ```text
 --no-launch-browser
 ```
 
----
-
-### (Optional) Verify Authentication
+(Optional) Verify authentication:
 
 ```bash
 gcloud auth list
 ```
 
-<!-- ### Required APIs
-
-Enable the required Google Cloud APIs:
-
-```bash
-gcloud services enable \
-  composer.googleapis.com \
-  storage.googleapis.com \
-  bigquery.googleapis.com \
-  iam.googleapis.com
-```
-
-**Example:**
-
-```bash
-gcloud services enable \
-  composer.googleapis.com \
-  storage.googleapis.com \
-  bigquery.googleapis.com \
-  iam.googleapis.com \
-  --project=gcc-etl-pipelines-06611
-```
-
-**Expected Output:**
-
-```text
-Operation "operations/xxxx" finished successfully.
-``` -->
-
 ---
 
 ## Service Account Setup
 
-Cloud Composer should use a **user-managed service account** instead of the default Compute Engine service account.
+Cloud Composer should use **user-managed service accounts** rather than the default Compute Engine service account.
 
-### Create Service Account
+### Create Terraform Service Account
 
 ```bash
 gcloud iam service-accounts create terraform-sa \
   --display-name="Terraform Service Account"
 ```
 
-**Expected Output:**
-
-```text
-Created service account [terraform-sa].
-```
-
-Verify creation:
+Verify:
 
 ```bash
 gcloud iam service-accounts list
@@ -195,83 +167,53 @@ gcloud iam service-accounts list
 
 ---
 
-### Assign Required IAM Roles
+## Assign Required IAM Roles
 
->  ⚠️ Important Security Notice
-The roles listed below follow the principle of least privilege and should be preferred.
+⚠️ **Important Security Notice**
 
-> 
-```markdown
-In some lab or troubleshooting scenarios, you may be tempted to grant the roles/editor role to the Terraform service account to bypass IAM errors. This role is highly permissive and must be avoided in production environments.
+The roles below follow the **principle of least privilege** and should be preferred.
 
-If roles/editor is used temporarily, remove it immediately after the infrastructure is created and replace it with the minimal required roles listed below.
-```
+> You may be tempted to grant `roles/editor` to bypass IAM errors.
+> **This role is highly permissive and must NOT be used in production.**
+> If `roles/editor` is used temporarily for labs, **remove it immediately** after provisioning.
 
-#### Cloud Composer & Terraform Service Account Roles (Required)
-
-##### Required to create and manage service accounts
-```bash
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountAdmin"
-```
-
-##### Required to enable and manage GCP APIs
-```bash
-gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/composer.admin"
-```
-
-##### Grant ActAs only on the Composer runtime SA (recommended)
-```bash
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:composer-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountUser"
-```
-
-
-> #### ⚠️ Temporary Workaround (Strongly Discouraged)
-
-🚨 Use only for local labs or short-lived testing
-
-The roles/editor role grants broad permissions across the project and violates least-privilege best practices.
-Do NOT use this in production.
-
-```bash
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/editor"
-```
-
-**Example:**
-
-```bash
-export PROJECT_ID="gcc-etl-pipelines-06611"
-export TF_SA="terraform-sa@${PROJECT_ID}.iam.gserviceaccount.com"
-export COMPOSER_SA="composer-sa@${PROJECT_ID}.iam.gserviceaccount.com"
-
-
-# Enable APIs
-gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${TF_SA}" \
-  --role="roles/serviceusage.serviceUsageAdmin"
-
-# Create/manage Composer environments
-gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${TF_SA}" \
-  --role="roles/composer.admin"
-
-# Grant ActAs only on the Composer runtime SA (recommended)
-gcloud iam service-accounts add-iam-policy-binding "${COMPOSER_SA}" \
-  --member="serviceAccount:${TF_SA}" \
-  --role="roles/iam.serviceAccountUser"
-```
 ---
 
-#### Optional: Editor Role (For Labs / Learning Only)
+### Roles for Terraform Service Account (`terraform-sa`)
 
-> #### ⚠️ **Not recommended for production**
+#### Enable and manage GCP APIs
+
+```bash
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/serviceusage.serviceUsageAdmin"
+```
+
+#### Create and manage Cloud Composer environments
+
+```bash
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/composer.admin"
+```
+
+---
+
+### Grant ActAs on Composer Runtime Service Account (Required)
+
+Terraform must be allowed to **act as** the Composer runtime service account.
+
+> ⚠️ This role must be granted **on the service account**, not on the project.
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding composer-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com \
+  --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+```
+
+---
+
+### 🚨 Temporary Workaround (Strongly Discouraged)
 
 ```bash
 gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
@@ -279,26 +221,17 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
   --role="roles/editor"
 ```
 
-**Example:**
-
-```bash
-gcloud projects add-iam-policy-binding gcc-etl-pipelines-06611 \
-  --member="serviceAccount:terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com" \
-  --role="roles/editor"
-```
-
-> #### 📌 Mandatory Cleanup Step
-
-#### After Terraform successfully completes:
+📌 **Mandatory Cleanup**
 
 ```bash
 gcloud projects remove-iam-policy-binding YOUR_PROJECT_ID \
   --member="serviceAccount:terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/editor"
 ```
+
 ---
 
-#### Verify Assigned Roles
+### Verify Assigned Roles
 
 ```bash
 gcloud projects get-iam-policy YOUR_PROJECT_ID \
@@ -307,233 +240,96 @@ gcloud projects get-iam-policy YOUR_PROJECT_ID \
   --format="table(bindings.role)"
 ```
 
-**Example:**
+---
 
-```bash
-gcloud projects get-iam-policy gcc-etl-pipelines-06611 \
-  --flatten="bindings[].members" \
-  --filter="bindings.members:terraform-sa@" \
-  --format="table(bindings.role)"
-```
+## Create and Download Service Account Key
 
-**Expected Output:**
-
-```text
-ROLE
-roles/composer.worker
-roles/editor
-```
-
-#### Create and Download the Service Account JSON Key
 ```bash
 gcloud iam service-accounts keys create terraform-sa-key.json \
   --iam-account="terraform-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com"
 ```
 
-**Example:**
-```bash
-gcloud iam service-accounts keys create terraform-sa-key.json \
-  --iam-account="terraform-sa@gcc-etl-pipelines-06611.iam.gserviceaccount.com"
-```
+⚠️ **Add this file to `.gitignore` immediately** (do not commit JSON keys).
 
-#### Configure Terraform to Use the Service Account
+---
 
-Save the json file `terraform-sa-key.json` to `/tf/tf-sa-key`
+## Configure Terraform Authentication
 
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS="/absolute/path/to/terraform-sa-key.json"
 ```
-**Example:**
 
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS="/tf/tf-sa-key/terraform-sa-key.json"
+---
+
+## GitHub Codespaces Integration
+
+### Create Codespaces Secret
+
+* **Name:** `TERRAFORM_SA_KEY`
+* **Value:** Full contents of the service account JSON key
+
+### How This Is Used
+
+* Injected into Codespaces as an environment variable
+* Converted into a JSON key file during Codespace startup
+* Never committed to source control
+
+🔐 **Security Notes**
+
+* Keys exist only inside ephemeral Codespaces
+* Rotate and delete unused keys regularly
+
+---
+
+## HCP Terraform Setup
+
+Create a workspace and store the API token as a Codespaces secret:
+
+```text
+TF_TOKEN_APP_TERRAFORM_IO
 ```
 
-
-> #### ⚠️ Add the file terraform-sa-key.json to .gitignore
-
-Add the file terraform-sa-key.json to .gitignore so that the file is not saved to the repository
-
-## Create Codespaces Secret for Terraform Service Account
-
-Create a **GitHub Codespaces secret** to securely store the Google Cloud service account key used by Terraform.
-
-### Steps
-
-1. Generate a **JSON key** for the Google Cloud service account that Terraform will use.
-2. In your GitHub repository, navigate to:
-
-   **Settings → Secrets and variables → Codespaces**
-3. Create a new secret with the following details:
-
-   - **Name:** `TERRAFORM_SA_KEY`
-   - **Value:** Paste the full contents of the service account JSON key
-
-4. Save the secret.
-
-### How This Is Used in Codespaces
-
-At the time of **GitHub Codespace launch**, the value of the `TERRAFORM_SA_KEY` secret is automatically injected into the Codespace as an environment variable.  
-A startup or post-create script converts this secret into a **JSON key file** on the filesystem, which Terraform then uses for authentication with Google Cloud.
-
-> 🔐 **Security Note:**  
-> - The JSON key file is created **only inside the ephemeral Codespace environment**
-> - The key is **never committed** to source control
-> - Always delete unused service account keys and rotate them regularly
-
-This approach enables secure, automated authentication for Terraform while keeping credentials out of the repository.
-
-
+Terraform will automatically use this token if present.
 
 ---
 
-## Set Up Workspace in HCP Terraform
-
-Create a workspace within a project in **HCP Terraform** to manage the infrastructure state for this repository.
-
-1. In HCP Terraform, create a new **project** (or use an existing one).
-2. Under the project, create a **workspace** for this repository.
-3. Generate an **API token** in HCP Terraform with access to the workspace.
-4. Store the API token securely as a **Codespaces secret** named:
-
-   `TF_TOKEN_APP_TERRAFORM_IO`
-
-This token allows Terraform to authenticate with HCP Terraform for remote state management and operations.
-
-
----
 ## Terraform Setup
 
-### Required Tools
-
-Ensure the following tools are installed:
-
-* Terraform ≥ 1.5
-* Google Cloud CLI
-
-Verify:
+Verify tools:
 
 ```bash
 terraform version
 gcloud version
 ```
 
----
-
-## Terraform Login (HCP Terraform Backend)
-
-To use **HCP Terraform** (Terraform Cloud) as the remote backend for state storage and runs, you must authenticate Terraform with your HCP Terraform account.
-
-### Prerequisite
-
-Make sure you have created and saved a Codespaces secret named:
-
-- `TF_TOKEN_APP_TERRAFORM_IO`
-
-(See: **Setup workspace in HCP Terraform**)
-
-### Authenticate Terraform
-
-Run:
+Authenticate Terraform:
 
 ```bash
 terraform login
 ```
 
-This command opens a browser flow (or prints a URL in headless environments) and stores a token locally in:
-
--  ~/.terraform.d/credentials.tfrc.json
-
-**Example (Headless / Codespaces)**
-
-If you are running inside GitHub Codespaces and cannot launch a browser automatically:
-
-```bash
-terraform login
-```
-
-**Example Output:**
-
-```text
-Terraform will request an API token for app.terraform.io using your browser.
-If you can't use a browser, follow this link to generate a token:
-https://app.terraform.io/app/settings/tokens?source=terraform-login
-```
-
-**Verify Login
-**
-You can confirm Terraform has credentials stored by checking:
-
-```bash
-cat ~/.terraform.d/credentials.tfrc.json
-```
-
-
-✅ You should see an entry for app.terraform.io.
-
-**Notes**
-
-- If TF_TOKEN_APP_TERRAFORM_IO is set in the environment (for example, via Codespaces secrets),
-- Terraform will automatically use it for app.terraform.io authentication.
-
-Do not commit credentials.tfrc.json to source control.
 ---
 
-#### Create Cloud Composer Environment
-
-This project uses **Terraform** to provision a **Cloud Composer 3 (Apache Airflow 2.x)** environment.
-
-#### Initialize Terraform
+## Create Cloud Composer Environment
 
 ```bash
 terraform init
-```
-
-**Expected Output:**
-
-```text
-Terraform has been successfully initialized!
-```
-
----
-
-#### Apply Terraform Configuration
-
-```bash
 terraform apply
 ```
 
-Confirm when prompted.
-
-> ⏳ **Note:** Environment creation can take **20–30 minutes**.
+⏳ **Note:** Provisioning takes ~20–30 minutes.
 
 ---
 
-#### Retrieve the DAGs Folder (GCS)
+## DAGs Management
 
-Once the environment is created, Terraform outputs the DAGs GCS prefix:
+Retrieve DAGs bucket prefix:
 
 ```bash
 terraform output dag_gcs_prefix
 ```
 
-**Example Output:**
-
-```text
-gs://us-central1-composer-xxxx-bucket/dags
-```
-
-List the DAGs directory:
-
-```bash
-gcloud storage ls gs://us-central1-composer-xxxx-bucket/dags/
-```
-
----
-
-#### Upload a DAG
-
-Upload a DAG file to the Composer environment:
+Upload a DAG:
 
 ```bash
 gcloud composer environments storage dags import \
@@ -542,73 +338,37 @@ gcloud composer environments storage dags import \
   --source ./dags/sample_dag.py
 ```
 
-**Example:**
-
-```bash
-gcloud composer environments storage dags import \
-  --environment composer-env \
-  --location us-central1 \
-  --source ./dags/hello_composer.py
-```
-
-**Expected Output:**
-
-```text
-Importing DAGs...
-Operation completed successfully.
-```
-
-The DAG will appear in the **Airflow Web UI** within a few minutes.
-
 ---
 
-#### Access Airflow Web UI
+## Access Airflow Web UI
 
 Navigate to:
 
 ```text
-Google Cloud Console → Cloud Composer → Environment → Airflow Web UI
+GCP Console → Cloud Composer → Environment → Airflow Web UI
 ```
-
-Log in using your Google Cloud account.
 
 ---
 
 ## Troubleshooting
 
-#### Error: `roles/composer.worker` Missing
+### Error: `iam.serviceAccounts.actAs`
 
-```text
-composer-sa@... is expected to have at least one role like roles/composer.worker
-```
+**Fix:** Grant `roles/iam.serviceAccountUser` on the Composer runtime service account.
 
-**Fix:** Assign `roles/composer.worker` to the environment service account.
+### Error: `roles/composer.worker` missing
 
----
+**Fix:** Assign `roles/composer.worker` to the Composer runtime service account.
 
-#### Error: GCS Bucket Name Restricted
+### Error: Storage permission denied
 
-```text
-Use of this bucket name is restricted: 'us-central1-google-composer-xxxx-bucket'
-```
-
-**Fix:** Use a **custom bucket name** that does not contain `google` or `goog`.
+**Fix:** Grant `roles/storage.objectAdmin` to the **Composer runtime service account** (avoid `roles/storage.admin` unless you truly need bucket admin).
 
 ---
 
-#### Error: Storage Permissions Missing
+## Cleanup
 
-```text
-storage.objects.list permission denied
-```
-
-**Fix:** Grant `roles/storage.objectAdmin` or temporarily `roles/editor`.
-
----
-
-#### Cleanup
-
-To avoid unnecessary charges, destroy all resources:
+To avoid unnecessary charges:
 
 ```bash
 terraform destroy
@@ -616,10 +376,8 @@ terraform destroy
 
 ---
 
-#### References
+## References
 
 * [https://cloud.google.com/composer](https://cloud.google.com/composer)
 * [https://cloud.google.com/composer/docs](https://cloud.google.com/composer/docs)
 * [https://airflow.apache.org/docs](https://airflow.apache.org/docs)
-
-

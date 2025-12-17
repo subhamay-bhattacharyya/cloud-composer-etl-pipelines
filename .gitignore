@@ -89,4 +89,3 @@ aws/*
 credentials.tfrc.json
 *-sa-key.json
 .terraform.*
-gcc-etl-pipelines-06611.json

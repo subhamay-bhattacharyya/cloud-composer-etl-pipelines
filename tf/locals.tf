@@ -13,7 +13,7 @@
 # --- root/locals.tf ---
 
 locals {
-  tfvars-filename = jsondecode(file("${path.cwd}/infrastructure.tfvars.json"))
+  tfvars-filename = jsondecode(file("${path.cwd}/terraform.tfvars.json"))
 }
 
 
