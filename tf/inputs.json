@@ -1,14 +1,14 @@
 {
-    "gcp-project-id": "gcc-etl-pipelines-06611-1",
+    "gcp-project-id": "gcc-etl-pipeline-06902",
+    "gcp-region": "us-central1",
     "gcp-project-name": "Subhamay GCC Lab to Explore Cloud Composer",
     "gcp-account-id": "gcc-lab-sa",
-    "gcp-sa-roles": [
+    "gcc-sa-roles": [
         "roles/composer.admin",
-        "roles/iam.serviceAccountUser",
+        "roles/iam.serviceAccountCreate",
         "roles/storage.admin",
         "roles/logging.logWriter"
     ],
-    "gcp-region": "us-central1",
     "required-apis": [
         "composer.googleapis.com",
         "iam.googleapis.com"

@@ -12,6 +12,6 @@ terraform {
 
 provider "google-beta" {
   credentials = file("tf-sa-key/terraform-sa-key.json")
-  project     = var.gcp-project-id
-  region      = var.gcp-region
+  project     = "gcc-etl-pipeline-06902"
+  region      = "us-central1"
 }

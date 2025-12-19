@@ -63,22 +63,21 @@ This lab is suitable for:
 
 ```mermaid
 flowchart TD
-    A[Developer / GitHub Codespaces] -->|Terraform CLI| B[Terraform Provisioning]
-    B -->|Enable APIs| C[GCP Service Usage]
-    B -->|Create Environment| D[Cloud Composer 3]
+    Dev[Developer / GitHub Codespace] -->|terraform init & apply| TF[Terraform CLI]
 
-    D --> E[Airflow Scheduler]
-    D --> F[Airflow Workers]
+    TF -->|Authenticate via SA Key| GCP[GCP Project]
+    TF -->|Remote State| HCP[HCP Terraform]
 
-    E -->|Read DAGs| G[GCS DAGs Bucket]
-    F -->|Read DAGs| G
+    GCP -->|Creates| SA[Terraform Service Account]
+    GCP -->|Creates| Composer[Cloud Composer Environment]
 
-    H[Terraform Service Account] -->|roles/composer.admin| D
-    H[Terraform Service Account] -->|roles/serviceusage.serviceUsageAdmin| C
-    H[Terraform Service Account] -->|"roles/iam.serviceAccountUser (ActAs)"| I[Composer Runtime Service Account]
+    Composer -->|Uses| GCS[GCS Composer Bucket]
+    GCS -->|Stores| DAGs[DAG Files]
 
-    I -->|roles/composer.worker| D
-    I -->|GCS object access| G
+    Dev -->|Upload DAGs| GCS
+    DAGs -->|Auto Sync| Airflow[Airflow Scheduler & Web UI]
+
+    Airflow -->|Executes| Tasks[Airflow Tasks]
 ```
 
 ---

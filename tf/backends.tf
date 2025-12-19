@@ -6,7 +6,7 @@ terraform {
     organization = "subhamay-bhattacharyya-projects"
 
     workspaces {
-      name = "cloud-composer-etl-pipelines"
+      name = "cloud-composer-etl-pipeline"
     }
   }
 }
